@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Windows.Forms;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using OrderManagements;
-
 
 namespace OrderManagements
 {
@@ -12,12 +9,14 @@ namespace OrderManagements
     {
         private readonly string _filePath;
         public List<Order> Orders { get; private set; }
+
         public OrderManager(string filePath = "orders.txt")
         {
             _filePath = filePath;
             Orders = new List<Order>();
             LoadOrders();
         }
+
         public void AddOrder(Order order)
         {
             if (order == null)
@@ -27,8 +26,8 @@ namespace OrderManagements
             Orders.Add(order);
             SaveOrders();
         }
-        public void RemoveOrder(Order order)
 
+        public void RemoveOrder(Order order)
         {
             if (order == null)
             {
@@ -37,6 +36,7 @@ namespace OrderManagements
             Orders.Remove(order);
             SaveOrders();
         }
+
         public void UpdateOrderStatus(Order order, OrderStatus newStatus)
         {
             if (order == null)
@@ -46,27 +46,31 @@ namespace OrderManagements
             order.UpdateStatus(newStatus);
             SaveOrders();
         }
+
         private void SaveOrders()
         {
             File.WriteAllLines(_filePath, Orders.Select(o =>
                 $"{o.CustomerName}|{o.Description}|{(int)o.Status}|{o.CreationDate:yyyy-MM-dd HH:mm:ss}"));
         }
+
         private void LoadOrders()
         {
             if (File.Exists(_filePath))
             {
-                var lines = File.ReadAllLines("orders.txt");
+                // ✅ Используем _filePath, а не "orders.txt"
+                var lines = File.ReadAllLines(_filePath);
                 foreach (var line in lines)
                 {
                     var parts = line.Split('|');
                     if (parts.Length == 4)
                     {
-                        OrderStatus status = (OrderStatus)Enum.Parse(typeof(OrderStatus), parts[2]);
-                        DateTime date;
-                        if (DateTime.TryParse(parts[3], out date))
+                        // ✅ Читаем статус как число
+                        if (int.TryParse(parts[2], out int statusInt) &&
+                            DateTime.TryParse(parts[3], out DateTime date))
                         {
-                            Orders.Add(new Order(parts[0], parts[1], date));
-                            Orders.Last().Status = status;
+                            var order = new Order(parts[0], parts[1], date);
+                            order.Status = (OrderStatus)statusInt;
+                            Orders.Add(order);
                         }
                     }
                 }

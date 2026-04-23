@@ -10,164 +10,168 @@ using System.Windows.Forms;
 
 namespace OrderManagements
 {
-    
-        public partial class OrderForm : Form
+    public partial class OrderForm : Form
+    {
+        public OrderManager orderManager;
+        public TextBox txtCustomerName;
+        public TextBox txtDescription;
+        public DateTimePicker dtpCreationDate;
+        public ComboBox cmbStatus;
+        public Button btnAdd;
+        public Button btnRemove;
+        public Button btnUpdate;
+        public ListBox lstOrders;
+
+        public OrderForm()
         {
-            private OrderManager orderManager;
-            private TextBox txtCustomerName;
-            private TextBox txtDescription;
-            private DateTimePicker dtpCreationDate;
-            private ComboBox cmbStatus;
-            private Button btnAdd;
-            private Button btnRemove;
-            private Button btnUpdate;
-            private ListBox lstOrders;
+            this.Text = "Управление заказами";
+            this.Width = 700;
+            this.Height = 500;
+            this.StartPosition = FormStartPosition.CenterScreen;
 
-            public OrderForm()
+            orderManager = new OrderManager();
+
+            txtCustomerName = new TextBox
             {
-                this.Text = "Управление заказами";
-                this.Width = 700;
-                this.Height = 500;
-                this.StartPosition = FormStartPosition.CenterScreen;
+                Location = new Point(10, 20),
+                Width = 200
+            };
 
-                orderManager = new OrderManager();
+            txtDescription = new TextBox
+            {
+                Location = new Point(220, 20),
+                Width = 250
+            };
 
-                // Имя клиента
-                txtCustomerName = new TextBox();
-                txtCustomerName.Location = new Point(10, 20);
-                txtCustomerName.Width = 200;
+            dtpCreationDate = new DateTimePicker
+            {
+                Location = new Point(480, 20),
+                Width = 150
+            };
 
+            btnAdd = new Button
+            {
+                Text = "Добавить заказ",
+                Location = new Point(10, 60),
+                Width = 150
+            };
+            btnAdd.Click += BtnAdd_Click;
 
-                // Описание
-                txtDescription = new TextBox();
-                txtDescription.Location = new Point(220, 20);
-                txtDescription.Width = 250;
+            btnRemove = new Button
+            {
+                Text = "Удалить выбранный",
+                Location = new Point(170, 60),
+                Width = 150
+            };
+            btnRemove.Click += BtnRemove_Click;
 
+            cmbStatus = new ComboBox
+            {
+                Location = new Point(330, 60),
+                Width = 150,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            cmbStatus.Items.AddRange(new string[] { "Новый", "В_обработке", "Завершён" });
+            cmbStatus.SelectedIndex = 0;
 
-                // Дата
-                dtpCreationDate = new DateTimePicker();
-                dtpCreationDate.Location = new Point(480, 20);
-                dtpCreationDate.Width = 150;
+            btnUpdate = new Button
+            {
+                Text = "Изменить статус",
+                Location = new Point(490, 60),
+                Width = 150
+            };
+            btnUpdate.Click += BtnUpdate_Click;
 
-                // Кнопка Добавить
-                btnAdd = new Button();
-                btnAdd.Text = "Добавить заказ";
-                btnAdd.Location = new Point(10, 60);
-                btnAdd.Width = 150;
-                btnAdd.Click += BtnAdd_Click;
+            lstOrders = new ListBox
+            {
+                Location = new Point(10, 100),
+                Width = 660,
+                Height = 350,
+                SelectionMode = SelectionMode.One
+            };
 
-                // Кнопка Удалить
-                btnRemove = new Button();
-                btnRemove.Text = "Удалить выбранный";
-                btnRemove.Location = new Point(170, 60);
-                btnRemove.Width = 150;
-                btnRemove.Click += BtnRemove_Click;
+            this.Controls.Add(txtCustomerName);
+            this.Controls.Add(txtDescription);
+            this.Controls.Add(dtpCreationDate);
+            this.Controls.Add(btnAdd);
+            this.Controls.Add(btnRemove);
+            this.Controls.Add(cmbStatus);
+            this.Controls.Add(btnUpdate);
+            this.Controls.Add(lstOrders);
 
-                // ComboBox Статус
-                cmbStatus = new ComboBox();
-                cmbStatus.Location = new Point(330, 60);
-                cmbStatus.Width = 150;
-                cmbStatus.DropDownStyle = ComboBoxStyle.DropDownList;
-                cmbStatus.Items.AddRange(new string[] { "Новый", "В_обработке", "Завершён" });
-                cmbStatus.SelectedIndex = 0;
+            UpdateOrdersList();
+        }
 
-                // Кнопка Обновить статус
-                btnUpdate = new Button();
-                btnUpdate.Text = "Изменить статус";
-                btnUpdate.Location = new Point(490, 60);
-                btnUpdate.Width = 150;
-                btnUpdate.Click += BtnUpdate_Click;
+        public void BtnAdd_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(txtCustomerName.Text) ||
+                string.IsNullOrWhiteSpace(txtDescription.Text))
+            {
+                MessageBox.Show("Заполните все поля!", "Ошибка",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
 
-                // Список
-                lstOrders = new ListBox();
-                lstOrders.Location = new Point(10, 100);
-                lstOrders.Width = 660;
-                lstOrders.Height = 350;
-                lstOrders.SelectionMode = SelectionMode.One;
+            Order newOrder = new Order(
+                txtCustomerName.Text,
+                txtDescription.Text,
+                dtpCreationDate.Value
+            );
 
-                // Добавляем на форму
-                this.Controls.Add(txtCustomerName);
-                this.Controls.Add(txtDescription);
-                this.Controls.Add(dtpCreationDate);
-                this.Controls.Add(btnAdd);
-                this.Controls.Add(btnRemove);
-                this.Controls.Add(cmbStatus);
-                this.Controls.Add(btnUpdate);
-                this.Controls.Add(lstOrders);
+            orderManager.AddOrder(newOrder);
+            txtCustomerName.Clear();
+            txtDescription.Clear();
+            UpdateOrdersList();
+        }
 
+        public void BtnRemove_Click(object sender, EventArgs e)
+        {
+            if (lstOrders.SelectedItem == null)
+            {
+                MessageBox.Show("Выберите заказ для удаления!", "Внимание",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            string selectedText = lstOrders.SelectedItem.ToString();
+            var orderToRemove = orderManager.Orders.Find(o => selectedText.Contains(o.Description));
+
+            if (orderToRemove != null)
+            {
+                orderManager.RemoveOrder(orderToRemove);
                 UpdateOrdersList();
             }
+        }
 
-            private void BtnAdd_Click(object sender, EventArgs e)
+        public void BtnUpdate_Click(object sender, EventArgs e)
+        {
+            if (lstOrders.SelectedItem == null)
             {
-                if (string.IsNullOrWhiteSpace(txtCustomerName.Text) ||
-                    string.IsNullOrWhiteSpace(txtDescription.Text))
-                {
-                    MessageBox.Show("Заполните все поля!", "Ошибка",
-                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                MessageBox.Show("Выберите заказ!", "Внимание",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
 
-                Order newOrder = new Order(
-                    txtCustomerName.Text,
-                    txtDescription.Text,
-                    dtpCreationDate.Value
-                );
+            string selectedText = lstOrders.SelectedItem.ToString();
+            var orderToUpdate = orderManager.Orders.Find(o => selectedText.Contains(o.Description));
 
-                orderManager.AddOrder(newOrder);
-                txtCustomerName.Clear();
-                txtDescription.Clear();
+            if (orderToUpdate != null)
+            {
+                string selectedStatusText = cmbStatus.SelectedItem.ToString();
+                OrderStatus newStatus = (OrderStatus)Enum.Parse(typeof(OrderStatus), selectedStatusText);
+                orderManager.UpdateOrderStatus(orderToUpdate, newStatus);
                 UpdateOrdersList();
             }
+        }
 
-            private void BtnRemove_Click(object sender, EventArgs e)
+        public void UpdateOrdersList()
+        {
+            lstOrders.Items.Clear();
+            foreach (var order in orderManager.Orders)
             {
-                if (lstOrders.SelectedItem == null)
-                {
-                    MessageBox.Show("Выберите заказ для удаления!", "Внимание",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                string selectedText = lstOrders.SelectedItem.ToString();
-                var orderToRemove = orderManager.Orders.Find(o => selectedText.Contains(o.Description));
-
-                if (orderToRemove != null)
-                {
-                    orderManager.RemoveOrder(orderToRemove);
-                    UpdateOrdersList();
-                }
-            }
-
-            private void BtnUpdate_Click(object sender, EventArgs e)
-            {
-                if (lstOrders.SelectedItem == null)
-                {
-                    MessageBox.Show("Выберите заказ!", "Внимание",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    return;
-                }
-
-                string selectedText = lstOrders.SelectedItem.ToString();
-                var orderToUpdate = orderManager.Orders.Find(o => selectedText.Contains(o.Description));
-
-                if (orderToUpdate != null)
-                {
-                    string selectedStatusText = cmbStatus.SelectedItem.ToString();
-                    OrderStatus newStatus = (OrderStatus)Enum.Parse(typeof(OrderStatus), selectedStatusText);
-                    orderManager.UpdateOrderStatus(orderToUpdate, newStatus);
-                    UpdateOrdersList();
-                }
-            }
-
-            private void UpdateOrdersList()
-            {
-                lstOrders.Items.Clear();
-                foreach (var order in orderManager.Orders)
-                {
-                    string displayString = $"[{order.Status}] {order.CustomerName} - {order.Description} ({order.CreationDate.ToShortDateString()})";
-                    lstOrders.Items.Add(displayString);
-                }
+                string displayString = $"[{order.Status}] {order.CustomerName} - {order.Description} ({order.CreationDate.ToShortDateString()})";
+                lstOrders.Items.Add(displayString);
             }
         }
     }
+}
